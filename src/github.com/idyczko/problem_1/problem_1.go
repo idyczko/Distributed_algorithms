@@ -20,24 +20,32 @@ func (slice Slice) indexOf(x int) (int){
   return -1;
 }
 
+func explore(v, parent int, children Slice, unexplored *Slice, channels []chan Message) bool{
+  if(len((*unexplored))>0){
+    val:=(*unexplored)[0];
+    (*unexplored)=append((*unexplored)[:0],(*unexplored)[1:]...);
+    channels[val]<-Message{v, "M"};
+    fmt.Println(v," sent M to ", val);
+    return false;
+  }else{
+    if(parent!=v){
+      channels[parent]<-Message{v, "parent"};
+      fmt.Println(v," sent parent to ", parent);
+    }
+    fmt.Println("Exiting from ", v,"Parent: ", parent,"Children: ", children);
+    return true;
+  }
+}
+
 func vertex(v int, n []int, channels []chan Message) (int, []int){
   fmt.Println("Starting node: ", v);
   parent:=-1;
-  children := []int{};
+  var children Slice;
   var unexplored Slice = n;
+
   if(v==root){
     parent = v;
-    if(len(unexplored)>0){
-      val:=unexplored[0];
-      unexplored=append(unexplored[:0],unexplored[1:]...);
-      channels[val]<-Message{v, "M"};
-      fmt.Println(v," sent M to ", val);
-    }else{
-      if(parent!=v){
-        channels[parent]<-Message{v, "parent"};
-        fmt.Println(v," sent parent to ", parent);
-      }
-      fmt.Println("Exiting from ", v,"Parent: ", parent,"Children: ", children);
+    if(explore(v, parent, children, &unexplored, channels)){
       return parent, children;
     }
   }
@@ -51,17 +59,7 @@ func vertex(v int, n []int, channels []chan Message) (int, []int){
           parent=x.sender;
           val:=unexplored.indexOf(x.sender);
           unexplored = append(unexplored[:val],unexplored[val+1:]...)
-          if(len(unexplored)>0){
-            val:=unexplored[0];
-            unexplored=append(unexplored[:0],unexplored[1:]...);
-            channels[val]<-Message{v, "M"};
-            fmt.Println(v," sent M to ", val);
-          }else{
-            if(parent!=v){
-              channels[parent]<-Message{v, "parent"};
-              fmt.Println(v," sent parent to ", parent);
-            }
-            fmt.Println("Exiting from ", v,"Parent: ", parent,"Children: ", children);
+          if(explore(v, parent, children, &unexplored, channels)){
             return parent, children;
           }
         }else{
@@ -72,31 +70,11 @@ func vertex(v int, n []int, channels []chan Message) (int, []int){
         }
       case "parent":
         children = append(children, x.sender);
-        if(len(unexplored)>0){
-          val:=unexplored[0];
-          unexplored=append(unexplored[:0],unexplored[1:]...);
-          channels[val]<-Message{v, "M"};
-          fmt.Println(v," sent M to ", val);
-        }else{
-          if(parent!=v){
-            channels[parent]<-Message{v, "parent"};
-            fmt.Println(v," sent parent to ", parent);
-          }
-          fmt.Println("Exiting from ", v,"Parent: ", parent,"Children: ", children);
+        if(explore(v, parent, children, &unexplored, channels)){
           return parent, children;
         }
       case "already":
-        if(len(unexplored)>0){
-          val:=unexplored[0];
-          unexplored=append(unexplored[:0],unexplored[1:]...);
-          channels[val]<-Message{v, "M"};
-          fmt.Println(v," sent M to ", val);
-        }else{
-          if(parent!=v){
-            channels[parent]<-Message{v, "parent"};
-            fmt.Println(v," sent parent to ", parent);
-          }
-          fmt.Println("Exiting from ", v,"Parent: ", parent,"Children: ", children);
+        if(explore(v, parent, children, &unexplored, channels)){
           return parent, children;
         }
       }
